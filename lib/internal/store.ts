@@ -1,21 +1,12 @@
-type InitialState = { [key: string]: unknown }
-type StateGetter<T> = (state: T) => T[keyof T]
-type StateSetter<T> = () => T
-
-type Store<T> = {
-  get: (getter: StateGetter<T>) => T[keyof T]
-  set: (setter: StateSetter<Partial<T>>) => void
-}
-
-type StoreEntries<T> = {
-  [K in keyof T]: [K, T[K]]
-}[keyof T][]
-
-type EventOptions = {
-  bubbles?: boolean
-  cancelable?: boolean
-  composed?: boolean
-}
+import type {
+  Entries,
+  EventOptions,
+  InitialState,
+  RecursivePartial,
+  StateGetter,
+  StateSetter,
+  Store
+} from '@/internal/types'
 
 export function defineStore<T extends InitialState>(
   name: string,
@@ -34,7 +25,7 @@ export function defineStore<T extends InitialState>(
       if (hasChanged && previous !== value) {
         const event = new CustomEvent(`syncrate:${name}`, {
           ...options,
-          detail: state[property as keyof T]
+          detail: target[property as keyof T]
         })
         document.dispatchEvent(event)
       }
@@ -48,9 +39,9 @@ export function defineStore<T extends InitialState>(
       return getter(state)
     },
 
-    set: (setter: StateSetter<Partial<T>>) => {
+    set: (setter: StateSetter<RecursivePartial<T>>) => {
       const store = setter()
-      const entries = Object.entries(store) as StoreEntries<T>
+      const entries = Object.entries(store) as Entries<T>
 
       entries.forEach(([key, value]) => {
         if (Object.keys(state).includes(String(key))) {
