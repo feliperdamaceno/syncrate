@@ -8,6 +8,8 @@ import type {
   Store
 } from '@/internal/types'
 
+import { deepClone } from '@/internal/utils'
+
 export function defineStore<T extends InitialState>(
   name: string,
   setter: StateSetter<T>,
@@ -36,11 +38,11 @@ export function defineStore<T extends InitialState>(
 
   return {
     get: (getter: StateGetter<T>) => {
-      return getter(state)
+      return getter(deepClone(state) as T)
     },
 
     set: (setter: StateSetter<RecursivePartial<T>>) => {
-      const store = setter()
+      const store = setter(deepClone(state))
       const entries = Object.entries(store) as Entries<T>
 
       entries.forEach(([key, value]) => {

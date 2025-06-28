@@ -8,7 +8,7 @@ export type RecursivePartial<T> = {
 
 export type InitialState = { [key: string]: unknown }
 export type StateGetter<T> = (state: T) => T[keyof T]
-export type StateSetter<T> = () => T
+export type StateSetter<T> = (state?: T) => T
 
 export type Store<T> = {
   get: (getter: StateGetter<T>) => T[keyof T]
