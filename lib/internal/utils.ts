@@ -1,10 +1,6 @@
-export function isCustomEvent(event: Event): event is CustomEvent {
-  return 'detail' in event
-}
+import type { DeepCloneResult, DeepReadonly } from './types'
 
-export function deepClone<T>(
-  value: T
-): T | T[] | { [key in keyof T]: T[keyof T] } {
+export function deepClone<T>(value: T): DeepCloneResult<T> {
   if (value === null || typeof value !== 'object') return value
 
   if (Array.isArray(value)) return value.map(deepClone)
@@ -18,4 +14,16 @@ export function deepClone<T>(
   }
 
   return clone
+}
+
+export function deepFreeze<T>(value: T): DeepReadonly<T> {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value)
+
+    Object.getOwnPropertyNames(value).forEach((key) => {
+      return deepFreeze(value[key as keyof T])
+    })
+  }
+
+  return value
 }

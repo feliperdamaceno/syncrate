@@ -1,49 +1,61 @@
 import type {
+  DeepPartial,
+  DeepReadonly,
   Entries,
-  EventOptions,
-  InitialState,
-  RecursivePartial,
-  StateGetter,
-  StateSetter,
-  Store
+  Indexable,
+  Listener,
+  Reader,
+  Store,
+  Writer
 } from '@/internal/types'
 
-import { deepClone } from '@/internal/utils'
+import { deepClone, deepFreeze } from '@/internal/utils'
 
-export function defineStore<T extends InitialState>(
+export function defineStore<State extends Indexable>(
   name: string,
-  setter: StateSetter<T>,
-  options: EventOptions = { bubbles: true, cancelable: true, composed: true }
-): Store<T> {
-  const state = new Proxy(setter(), {
-    get: (target, property, receiver): T[keyof T] => {
-      return Reflect.get(target, property, receiver)
-    },
+  state: State
+): Store<State> {
+  const listeners = new Set<Listener>()
 
-    set: (target, property, value, receiver) => {
-      const previous = target[property as keyof T]
-      const hasChanged = Reflect.set(target, property, value, receiver)
+  function createProxyState<T extends Indexable>(state: T): T {
+    return new Proxy(state, {
+      get: (target, property, receiver) => {
+        const value = Reflect.get(target, property, receiver)
 
-      if (hasChanged && previous !== value) {
-        const event = new CustomEvent(`syncrate:${name}`, {
-          ...options,
-          detail: target[property as keyof T]
-        })
-        document.dispatchEvent(event)
+        if (typeof value === 'object' && value !== null) {
+          return createProxyState(value as Indexable)
+        }
+
+        return value
+      },
+
+      set: (target, property, value, receiver) => {
+        const previous = target[property as keyof T]
+        const hasChanged = Reflect.set(target, property, value, receiver)
+
+        if (hasChanged && previous !== value) {
+          listeners.forEach((listener) => listener())
+        }
+
+        return hasChanged
       }
+    })
+  }
 
-      return hasChanged
-    }
-  })
+  state = createProxyState(state)
 
   return {
-    get: (getter: StateGetter<T>) => {
-      return getter(deepClone(state) as T)
+    get: (reader: Reader<DeepReadonly<State>>) => {
+      const listener = () => reader(deepFreeze(deepClone(state) as State))
+      listener()
+
+      listeners.add(listener)
+      return () => listeners.delete(listener)
     },
 
-    set: (setter: StateSetter<RecursivePartial<T>>) => {
-      const store = setter(deepClone(state))
-      const entries = Object.entries(store) as Entries<T>
+    set: (writer: Writer<DeepPartial<State>>) => {
+      const store = writer(deepClone(state))
+      const entries = Object.entries(store) as Entries<State>
 
       entries.forEach(([key, value]) => {
         if (Object.keys(state).includes(String(key))) {
