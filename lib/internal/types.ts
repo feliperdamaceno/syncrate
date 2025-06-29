@@ -22,6 +22,16 @@ export type Unsubscriber = () => void
 export type Reader<State> = (state: State) => void
 export type Writer<State> = (state?: State) => State
 
+export type EventDetails = {
+  bubbles?: boolean
+  cancelable?: boolean
+  composed?: boolean
+}
+
+export type StoreOptions = {
+  event: EventDetails
+}
+
 export type Store<State> = {
   get: (reader: Reader<DeepReadonly<State>>) => Unsubscriber
   set: (writer: Writer<DeepPartial<State>>) => void

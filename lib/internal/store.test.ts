@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { defineStore } from '@/internal/store'
+import { isCustomEvent } from '@/internal/utils'
 
 describe('defineStore', () => {
   afterEach(() => {
@@ -79,6 +80,32 @@ describe('defineStore', () => {
 
     store.set(() => ({ name: 'doe' }))
 
+    expect(got).to.be.equal(want)
+  })
+
+  it('should emit custom event when state changes', () => {
+    const store = defineStore('test', { name: 'john' })
+
+    const handler = vi.fn()
+    document.addEventListener('syncrate:test', handler)
+
+    store.set(() => ({ name: 'doe' }))
+    expect(handler).toBeCalled()
+  })
+
+  it('should send changed state in emitted custom event detail', () => {
+    const store = defineStore('test', { name: 'john' })
+
+    const want = 'doe'
+    let got: string | undefined
+
+    document.addEventListener('syncrate:test', (event) => {
+      if (isCustomEvent(event)) {
+        got = event.detail
+      }
+    })
+
+    store.set(() => ({ name: 'doe' }))
     expect(got).to.be.equal(want)
   })
 })

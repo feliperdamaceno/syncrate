@@ -1,4 +1,4 @@
-import type { DeepCloneResult, DeepReadonly } from './types'
+import type { DeepCloneResult, DeepReadonly } from '@/internal/types'
 
 export function deepClone<T>(value: T): DeepCloneResult<T> {
   if (value === null || typeof value !== 'object') return value
@@ -26,4 +26,8 @@ export function deepFreeze<T>(value: T): DeepReadonly<T> {
   }
 
   return value
+}
+
+export function isCustomEvent(event: Event): event is CustomEvent {
+  return 'detail' in event
 }

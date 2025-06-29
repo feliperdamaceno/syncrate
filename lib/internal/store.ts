@@ -6,14 +6,24 @@ import type {
   Listener,
   Reader,
   Store,
+  StoreOptions,
   Writer
 } from '@/internal/types'
 
 import { deepClone, deepFreeze } from '@/internal/utils'
 
+const defaultStoreOptions: StoreOptions = {
+  event: {
+    bubbles: true,
+    cancelable: true,
+    composed: true
+  }
+}
+
 export function defineStore<State extends Indexable>(
   name: string,
-  state: State
+  state: State,
+  options: StoreOptions = defaultStoreOptions
 ): Store<State> {
   const listeners = new Set<Listener>()
 
@@ -34,6 +44,12 @@ export function defineStore<State extends Indexable>(
         const hasChanged = Reflect.set(target, property, value, receiver)
 
         if (hasChanged && previous !== value) {
+          const event = new CustomEvent(`syncrate:${name}`, {
+            ...options,
+            detail: target[property as keyof T]
+          })
+
+          document.dispatchEvent(event)
           listeners.forEach((listener) => listener())
         }
 
