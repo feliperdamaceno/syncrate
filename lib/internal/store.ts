@@ -2,17 +2,23 @@ import type {
   DeepPartial,
   DeepReadonly,
   Entries,
-  Indexable,
+  Indexable
+} from '@/internal/types/helper.types'
+import type {
   Listener,
   Reader,
   Store,
   StoreOptions,
   Writer
-} from '@/internal/types'
+} from '@/internal/types/store.types'
 
-import { deepClone, deepFreeze } from '@/internal/utils'
+import { deepClone, deepFreeze, isObject } from '@/internal/utils'
 
 const defaultStoreOptions: StoreOptions = {
+  storage: {
+    persist: false,
+    type: 'session'
+  },
   event: {
     bubbles: true,
     cancelable: true,
@@ -20,20 +26,20 @@ const defaultStoreOptions: StoreOptions = {
   }
 }
 
-export function defineStore<State extends Indexable>(
+export function defineStore<State extends Indexable<State>>(
   name: string,
   state: State,
   options: StoreOptions = defaultStoreOptions
 ): Store<State> {
   const listeners = new Set<Listener>()
 
-  function createProxyState<T extends Indexable>(state: T): T {
-    return new Proxy(state, {
+  function createProxy<T extends Indexable<T>>(value: T): T {
+    return new Proxy(value, {
       get: (target, property, receiver) => {
         const value = Reflect.get(target, property, receiver)
 
-        if (typeof value === 'object' && value !== null) {
-          return createProxyState(value as Indexable)
+        if (isObject(value) && value !== null) {
+          return createProxy(value as { [K: string]: unknown })
         }
 
         return value
@@ -45,7 +51,7 @@ export function defineStore<State extends Indexable>(
 
         if (hasChanged && previous !== value) {
           const event = new CustomEvent(`syncrate:${name}`, {
-            ...options,
+            ...options.event,
             detail: target[property as keyof T]
           })
 
@@ -58,11 +64,11 @@ export function defineStore<State extends Indexable>(
     })
   }
 
-  state = createProxyState(state)
+  state = createProxy(state)
 
   return {
     get: (reader: Reader<DeepReadonly<State>>) => {
-      const listener = () => reader(deepFreeze(deepClone(state) as State))
+      const listener = () => reader(deepFreeze(deepClone(state)))
       listener()
 
       listeners.add(listener)
@@ -70,7 +76,7 @@ export function defineStore<State extends Indexable>(
     },
 
     set: (writer: Writer<DeepPartial<State>>) => {
-      const store = writer(deepClone(state))
+      const store = writer(state)
       const entries = Object.entries(store) as Entries<State>
 
       entries.forEach(([key, value]) => {
