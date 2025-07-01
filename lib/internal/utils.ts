@@ -9,8 +9,26 @@ export function isObject(value: unknown): value is object {
 }
 
 export function deepClone<T>(value: T): T {
+  if (value instanceof Map) {
+    const result = new Map()
+    value.forEach((value, key) => result.set(deepClone(key), deepClone(value)))
+    return result as T
+  }
+
+  if (value instanceof Set) {
+    return new Set(value) as T
+  }
+
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return new Date(value) as T
+  }
+
+  if (value instanceof RegExp) {
+    return new RegExp(value.source, value.flags) as T
+  }
+
   if (Array.isArray(value)) {
-    return value.map(deepClone) as unknown as T
+    return value.map(deepClone) as T
   }
 
   if (isObject(value)) {

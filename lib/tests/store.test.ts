@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineStore } from '@/internal/store'
 import { isCustomEvent } from '@/internal/utils'
 
-describe('defineStore', () => {
+describe('defineStore()', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
@@ -16,6 +16,17 @@ describe('defineStore', () => {
 
     store.get((state) => (got = state.name))
     expect(got).to.be.equal(want)
+  })
+
+  it('should throw error when trying to modify immutable state from get()', () => {
+    const store = defineStore('test', { name: 'john' })
+
+    expect(() => {
+      store.get((state) => {
+        // @ts-expect-error: test only
+        state.name = 'doe'
+      })
+    }).toThrowError()
   })
 
   it('should set new state', () => {
