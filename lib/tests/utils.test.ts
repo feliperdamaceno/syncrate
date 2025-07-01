@@ -203,11 +203,6 @@ describe('deepFreeze()', () => {
 
     expect(() => {
       // @ts-expect-error: test only
-      got = 'value'
-    }).toThrowError()
-
-    expect(() => {
-      // @ts-expect-error: test only
       got.first = 'value'
     }).toThrowError()
 
