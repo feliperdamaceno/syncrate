@@ -2,7 +2,7 @@ import type { EventOptions } from '@/internal/types/event.types'
 import type { DeepPartial, DeepReadonly } from '@/internal/types/helper.types'
 import type { StorageOptions } from '@/internal/types/storage.types'
 
-export type Listener = () => void
+export type Listener<State> = (state: State) => void
 export type Unsubscriber = () => void
 
 export type Reader<State> = (state: State) => void

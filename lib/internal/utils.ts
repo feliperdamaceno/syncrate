@@ -5,7 +5,7 @@ export function isCustomEvent(event: Event): event is CustomEvent {
 }
 
 export function isObject(value: unknown): value is object {
-  return value === null && typeof value !== 'object' && !Array.isArray(value)
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 export function deepClone<T>(value: T): T {
@@ -29,13 +29,15 @@ export function deepClone<T>(value: T): T {
   return value
 }
 
-export function deepFreeze<T>(value: T): DeepReadonly<T> {
-  if (value && isObject(value) && !Object.isFrozen(value)) {
+export function deepFreeze<T extends Indexable<T>>(value: T): DeepReadonly<T> {
+  if (isObject(value) && !Object.isFrozen(value)) {
     Object.freeze(value)
 
-    Object.getOwnPropertyNames(value).forEach((key) => {
-      return deepFreeze(value[key as keyof T])
-    })
+    for (const key in value) {
+      if (Object.hasOwn(value, key)) {
+        deepFreeze(value[key])
+      }
+    }
   }
 
   return value
