@@ -9,8 +9,8 @@ export type Reader<State> = (state: State) => void
 export type Writer<State> = (state: State) => State
 
 export type StoreOptions = {
-  storage: StorageOptions
-  event: EventOptions
+  storage?: StorageOptions
+  event?: EventOptions
 }
 
 export type Store<State> = {

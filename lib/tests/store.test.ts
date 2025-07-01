@@ -119,4 +119,71 @@ describe('defineStore()', () => {
     store.set(() => ({ name: 'doe' }))
     expect(got).to.be.equal(want)
   })
+
+  it('should get initial state from storage on load when flags are enabled', () => {
+    const key = 'test'
+    const want = { name: 'doe' }
+
+    expect(() => {
+      const parsed = JSON.stringify(want)
+      window.sessionStorage.setItem(key, parsed)
+    }).not.toThrowError()
+
+    const store = defineStore(
+      key,
+      { name: 'john' },
+      { storage: { persist: true } }
+    )
+
+    let got: string | undefined = undefined
+
+    store.get((state) => (got = state.name))
+
+    expect(want.name).to.be.equal(got)
+  })
+
+  it('should persist data to "session" storage when flags are enabled', () => {
+    type TestData = { name: string }
+    const key = 'test'
+    const store = defineStore(
+      key,
+      { name: 'john' },
+      { storage: { persist: true } }
+    )
+
+    let want: TestData | undefined = undefined
+    let got: string | undefined = undefined
+
+    store.get((state) => (got = state.name))
+
+    expect(() => {
+      want = JSON.parse(
+        window.sessionStorage.getItem(key) as string
+      ) as TestData
+
+      expect(want.name).to.be.equal(got)
+    }).not.toThrowError()
+  })
+
+  it('should persist data to "local" storage when flags are enabled', () => {
+    type TestData = { name: string }
+
+    const key = 'test'
+    const store = defineStore(
+      key,
+      { name: 'john' },
+      { storage: { persist: true, type: 'local' } }
+    )
+
+    let want: TestData | undefined = undefined
+    let got: string | undefined = undefined
+
+    store.get((state) => (got = state.name))
+
+    expect(() => {
+      want = JSON.parse(window.localStorage.getItem(key) as string) as TestData
+
+      expect(want.name).to.be.equal(got)
+    }).not.toThrowError()
+  })
 })

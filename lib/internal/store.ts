@@ -35,7 +35,7 @@ export function defineStore<State extends Indexable<State>>(
   const listeners = new Set<Listener<State>>()
   let storage: StorageModule | null = null
 
-  if (options.storage.persist) {
+  if (options?.storage?.persist) {
     storage = new StorageModule(options.storage.type)
   }
 
