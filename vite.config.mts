@@ -9,6 +9,7 @@ export default defineConfig({
     }
   },
   build: {
+    minify: false,
     lib: {
       entry: new URL('./lib/syncrate.ts', import.meta.url).pathname,
       name: 'syncrate',
