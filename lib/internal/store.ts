@@ -1,5 +1,4 @@
 import type {
-  DeepPartial,
   DeepReadonly,
   Entries,
   Indexable
@@ -128,7 +127,7 @@ export function defineStore<State extends Indexable<State>>({
    *
    * @param {Function} writer - `callback` function that receive the `state` as first param.
    */
-  const set = (writer: Writer<DeepPartial<State>>): void => {
+  const set = (writer: Writer<State>): void => {
     const snapshot = deepClone(store)
     const updates = Object.entries(writer(snapshot)) as Entries<State>
 

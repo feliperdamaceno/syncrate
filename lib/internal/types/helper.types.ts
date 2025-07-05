@@ -9,7 +9,3 @@ export type DeepReadonly<T> = Readonly<{
     ? Readonly<T[K]>
     : Readonly<DeepReadonly<T[K]>>
 }>
-
-export type DeepPartial<T> = {
-  [K in keyof T]?: DeepPartial<T[K]>
-}
