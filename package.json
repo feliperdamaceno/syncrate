@@ -1,7 +1,7 @@
 {
   "name": "syncrate",
-  "description": "A simple and flexible state management for Vanilla JS/TS and Web Components.",
-  "version": "0.0.2",
+  "description": "A simple and flexible state management solution for Vanilla JavaScript, TypeScript, and Web Components.",
+  "version": "1.0.0",
   "private": false,
   "types": "./dist/index.d.ts",
   "main": "./dist/syncrate.es.js",

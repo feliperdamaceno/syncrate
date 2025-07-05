@@ -1,9 +1,7 @@
 # Syncrate
 
-A simple and flexible state management for Vanilla JS/TS and Web Components.
-
-<strong style="color: tomato;">⚠️ This project is still in Alpha, and is subject
-of drastic changes, do NOT use in PRODUCTION!</strong>
+A simple and flexible state management solution for Vanilla JavaScript,
+TypeScript, and Web Components.
 
 ## Table of contents
 
@@ -53,9 +51,10 @@ project or you would like to keep all type safe.
 
 First steps is to use `defineStore` function to instantiate a new store:
 
-```html
-<script type="module">
-  const store = defineStore('todos', () => ({
+```typescript
+const store = defineStore({
+  name: 'todos',
+  state: {
     todos: [
       {
         id: 1,
@@ -63,128 +62,181 @@ First steps is to use `defineStore` function to instantiate a new store:
       },
       {
         id: 2,
-        title: 'Share syncrate with my friends :)'
+        title: 'Share syncrate with my friends :P'
       }
     ]
-  }))
-</script>
+  }
+})
 ```
 
-The `defineStore` function requires a unique key `name` and a `callback` that
-returns an object as initial state.
+The `defineStore` function requires a unique store `name` and an `object` as
+initial state.
 
 **Getting values from the Store**
 
 Once the store is defined, you can simply call the `store.get` method passing a
-`callback` function that accepts the `state` object as first parameter, and
+`callback` function that receives the `state` object as first parameter, and
 simply extract the value you want:
 
-```html
-<script type="module">
-  /* ...code from previous examples */
+```typescript
+/* ...code from previous example */
 
-  const todos = store.get((state) => state.todos)
-  console.log(todos) /* return an array of todos */
-</script>
+let todos = []
+
+store.get((state) => {
+  todos = state.todos
+})
+
+console.log(todos) /* return an array of todos */
 ```
 
-**Setting a new value to the Store**
+This will also subscribe the reader `callback` into an internal store listeners
+list, which will notify all readers subscribed to it on every store update.
 
-Similarly with `store.get` you also have a `store.set` method that can be used
-to perform updates:
+If for some reason you would like to unsubscribe from those changes, the
+`store.get` method returns an unsubscribe `callback` function tha can be called
+to achieve that.
 
-```html
-<script type="module">
-  /* ...code from previous examples */
+```typescript
+/* ...code from previous example */
 
-  store.set((state) => ({
-    todos: [
-      ...state.todos,
-      {
-        id: 3,
-        title: 'Give a GitHub star to the syncrate project :P'
-      }
-    ]
-  }))
+const unsubscribe = store.get((state) => {
+  todos = state.todos
+})
 
-  const todos = store.get((state) => state.todos)
-  console.log(todos) /* will have all 3 todos */
-</script>
+unsubscribe() /* will unsubscribe the reader callback from all store changes */
 ```
 
-Note that to retain all the previous todos we need to use the `spread` operator,
-and after updating we are creating a new constant to hold the todo values. This
-is by design to ensure the state is `immutable`.
+**Updating a value from the Store**
 
-However, there are other alternatives to capture the new computed value that you
-can see in the following examples.
+Similarly with `store.get`, the store also contains a `store.set` method that
+can be used to perform updates in the state:
 
-**Where is the reactivity???**
+```typescript
+/* ...code from previous example */
 
-Since the return type of `store.get` is immutable, how can I tell my UI to
-re-render, or how do I capture the new value in a easy way?
+store.set((state) => ({
+  todos: [
+    ...state.todos,
+    {
+      id: 3,
+      title: 'Give a GitHub star to the syncrate project :P'
+    }
+  ]
+}))
 
-Well, we can listen for event changes! 🫡
-
-When the you call `store.set` a new `CustomEvent` is dispatched to the DOM,
-announcing the changes. The event name is a combination of the `syncrate:`
-prefix + the store key `name` you used when you called `defineStore` function.
-
-That event will also send the changed data in the `event.detail` property, on
-which you can capture and update your UI or any state you have set.
-
-Here is an example:
-
-```html
-<script type="module">
-  /* ...code from previous examples */
-
-  let todos = store.get((state) => state.todos)
-
-  document.addEventListener('syncrate:todos', (event) => {
-    if (!event.detail) return
-    todos = event.detail
-  })
-
-  store.set(() => ({
-    todos: [
-      ...todos,
-      {
-        id: 3,
-        title: 'Give a GitHub star to the syncrate project :P'
-      }
-    ]
-  }))
-
-  console.log(todos) /* will have all 3 todos */
-</script>
+console.log(todos) /* will have all 3 todos */
 ```
 
-All store event updates are called in the `document`, and it bubble up by
+**Listening for store changes when getting a value**
+
+As mentioned before, `store.get` reader `callback` will be subscribed for store
+changes. This means that any operations defined inside of that `callback` will
+be called every time the store changes.
+
+```typescript
+/* ...code from previous example */
+
+store.get((state) => {
+  test = state.todos
+
+  /* here you can perform a re-render or any operation you would like */
+  console.log('changed')
+})
+```
+
+**Listening for store changes from anywhere**
+
+When the you call `store.set` a new `CustomEvent` is dispatched in the
+`document` announcing the changes. The event name is a combination of the
+`syncrate:` prefix and the store `name` used when `defineStore` function has
+been called.
+
+That event will also send the changed `state` in the `event.detail` property.
+
+```typescript
+/* listen from anywhere in the application */
+document.addEventListener('syncrate:todos', (event) => {
+  if (!event.detail) return
+
+  const todos = event.detail
+
+  /* here you can perform any operation you would like */
+  alert(todos.at(-1).title)
+})
+```
+
+All store event updates are called in the `document` itself, and it bubble up by
 default. This means that any component withing the `document` will be able to
 listen for updates, regardless on where they are located.
 
 Also, If you are mutating the `store` values withing a Web Components, the
-`CustomEvent` also have a `composed` default to `true`, this ensures the event
+`CustomEvent` also have `composed` default to `true`, this ensures the event
 will propagate across the shadow DOM boundary into the standard DOM.
 
-Using `CustomEvent` ensures the logic is decoupled as much as possible from the
-component itself, specially when using Web Components.
+Listening for the `CustomEvent` ensures the business logic is as decoupled as
+possible from the component itself, specially when using Web Components.
 
 **CustomEvent options**
 
 If for some reason you would like to customize the behavior of the emitted
-event, the `defineStore` function also accepts an optional object for further
-customization:
+event, the `defineStore` function also accepts an optional configuration object:
 
-```html
-<script type="module">
-  const store = defineStore('custom', () => ({ custom: 'value' }), {
-    bubbles: true,
-    cancelable: true,
-    composed: true
-  })
-</script>
+```typescript
+const store = defineStore({
+  name: 'todos',
+  state: {
+    todos: []
+  },
+  options: {
+    /* customizes the event behavior */
+    event: {
+      bubbles: true,
+      cancelable: true,
+      composed: true
+    }
+  }
+})
+```
+
+**Persisting state on local or session storage**
+
+The store also comes with an out of the box feature to persist state in the
+`sessionStorage` or `localStorage`. To achieve that, you can simply enable it in
+the options:
+
+```typescript
+const store = defineStore({
+  name: 'todos',
+  state: {
+    todos: []
+  },
+  options: {
+    /* enables storage persistency */
+    storage: {
+      persist: true,
+      type: 'session' /* default value, not required to be passed */
+    }
+  }
+})
+```
+
+Setting `persist` to `true` will use the `session` storage by default, but you
+can always overwrite it by setting `type` option as `local`.
+
+```typescript
+const store = defineStore({
+  name: 'todos',
+  state: {
+    todos: []
+  },
+  options: {
+    storage: {
+      persist: true,
+      type: 'local' /* use local storage instead */
+    }
+  }
+})
 ```
 
 ## Implementation Example
@@ -192,166 +244,176 @@ customization:
 Here we will create a bare minimal todo app that consumes the store we created
 previously withing Web Components.
 
+**Defining our Store**
+
+In this example we will use the brilliant library
+[lit-html](https://www.npmjs.com/package/lit-html) to render our components
+along with the `syncrate` store.
+
+```typescript
+/* import the library from the CDN */
+import { defineStore } from 'https://cdn.jsdelivr.net/npm/syncrate@latest/+esm'
+
+/* instantiate the store */
+const store = defineStore({
+  name: 'todos',
+  state: {
+    todos: []
+  },
+  options: {
+    storage: {
+      persist: true,
+      type: 'local'
+    }
+  }
+})
+```
+
 **Creating a Base Class**
 
 This class include helper methods that allow re-rendering, and it also handles
 the shadowDOM for us.
 
-```html
-<script type="module">
-  /* ...code from previous examples */
-
-  class BaseElement extends HTMLElement {
-    constructor() {
-      super()
-      this.shadow = this.attachShadow({ mode: 'open' })
-      this.styles = document.createElement('style')
-      this.template = document.createElement('template')
-    }
-
-    /* helper to update the component */
-    #requestUpdate() {
-      while (this.shadow.firstChild) {
-        this.shadow.lastChild.remove()
-      }
-
-      const host = this.template.content.cloneNode(true)
-
-      if (this.styles.textContent.length > 0) {
-        host.prepend(this.styles)
-      }
-
-      this.shadow.appendChild(host)
-    }
-
-    /* method used to construct the markup */
-    render() {
-      this.#requestUpdate()
-    }
-
-    /* lifecycle method that runs whenever the component is mounted in the DOM */
-    connectedCallback() {
-      this.render()
-    }
+```typescript
+class BaseElement extends HTMLElement {
+  constructor() {
+    super()
+    this.shadow = this.attachShadow({ mode: 'open' })
+    this.css = new CSSStyleSheet()
+    this.html = document.createElement('template')
   }
-</script>
+
+  /* helper method used render the elements */
+  render() {
+    while (this.shadow.firstChild) {
+      this.shadow.lastChild.remove()
+    }
+
+    const host = this.html.content.cloneNode(true)
+    this.shadow.appendChild(host)
+  }
+
+  /* lifecycle that runs whenever the component is mounted in the DOM */
+  connectedCallback() {
+    this.shadow.adoptedStyleSheets = [this.css]
+    this.render()
+  }
+}
 ```
 
 **The TodoList Component**
 
-Our `TodoList` compontent will inherit our `BaseElement`, so it comes will all
-the helpers we created in the previous steps.
+Our `TodoList` component will extend our `BaseElement` class, so it will inherit
+all helpers we created in the previous steps.
 
 Inside this component, we also consume our `store` by setting an internal state.
 
-```html
-<script type="module">
-  /* ...code from previous examples */
+```typescript
+class TodoList extends BaseElement {
+  constructor() {
+    super()
+    this.todos = []
 
-  class TodoList extends BaseElement {
-    constructor() {
-      super()
+    /* use the store to get all the initial values */
+    store.get((state) => {
+      this.todos = state.todos
 
-      /* use the store to get all the initial todos */
-      this.todos = store.get((state) => state.todos)
-    }
-
-    connectedCallback() {
-      super.connectedCallback()
-
-      /* listener for our our custom event */
-      document.addEventListener('syncrate:todos', (event) => {
-        if (!event.detail) return
-
-        /* update the internal state with the new value */
-        this.todos = event.detail
-
-        /* trigger a re-render when the state changes */
-        this.render()
-      })
-    }
-
-    render() {
-      /* construct a list of todos */
-      const items = this.todos?.map(
-        (todo) => String.raw`<li>${todo.title}</li>`
-      )
-
-      /* inject the result in the template */
-      this.template.innerHTML = String.raw`
-        <ul>
-          ${items.join('')}
-        </ul>
-      `
-
-      /* request component re-render */
-      super.render()
-    }
+      /* register our render method inside the reader, so it will be called every time the state changes, therefore re-rendering the element */
+      this.render()
+    })
   }
 
-  /* don't forget to define the element */
-  customElements.define('todo-list', TodoList)
-</script>
+  render() {
+    /* example on how to style the elements */
+    this.css.replace`
+      ul {
+        list-style: none;
+        padding-inline-start: 0;
+      }
+    `
+
+    /* construct a list of todos */
+    const items = this.todos?.map((todo) => `<li>${todo.title}</li>`).join('')
+
+    /* inject the result in the html (this is an example only, please don't use innerHTML in a real world project to avoid security issues) */
+    this.html.innerHTML = `
+      <ul>
+        ${items}
+      </ul>
+    `
+
+    /* call the helper method from the superclass */
+    super.render()
+  }
+}
+
+/* register our custom element into the DOM */
+customElements.define('todo-list', TodoList)
 ```
 
 **The TodoUpdater Component**
 
-Our `TodoUpdater` will have a simple button that upon click adds a new todo into
-our store. Since the `TodoList` is listening for changes, it will re-render
-accordantly.
+Our `TodoUpdater` will have a simple `<input>` and `<button>` that upon click it
+will add a new todo into our store. Since the `TodoList` render method has
+subscribed for changes, it will re-render accordantly.
 
-```html
-<script type="module">
-  /* ...code from previous examples */
+```typescript
+class TodoUpdater extends BaseElement {
+  connectedCallback() {
+    /* don't forget to call the superclass method when overwriting it */
+    super.connectedCallback()
 
-  class TodoUpdater extends BaseElement {
-    constructor() {
-      super()
-    }
+    /* bind the handler to the button */
+    const button = this.shadow.querySelector('button')
+    const input = this.shadow.querySelector('input')
 
-    connectedCallback() {
-      super.connectedCallback()
-
-      /* bind handler to the button */
-      const button = this.shadow.querySelector('button')
-      button?.addEventListener('click', this.handleClick)
-    }
-
-    handleClick() {
-      /* set new list of todos */
-      store.set((state) => ({
-        todos: [
-          ...state.todos,
-          {
-            id: 3,
-            title: 'Give a GitHub to the syncrate project :P'
-          }
-        ]
-      }))
-    }
-
-    render() {
-      this.template.innerHTML = String.raw`<button>Update Todos</button>`
-      super.render()
-    }
+    button?.addEventListener('click', () => {
+      this.handleClick(input)
+    })
   }
 
-  /* don't forget to define the element */
-  customElements.define('todo-updater', TodoUpdater)
-</script>
+  handleClick(input) {
+    if (!input?.value) return
+
+    /* add new todo into the store */
+    store.set((state) => ({
+      todos: [
+        ...state.todos,
+        {
+          id: state.todos.length + 1,
+          title: input.value
+        }
+      ]
+    }))
+
+    /* clean the input after todo has been created */
+    input.value = ''
+  }
+
+  render() {
+    this.html.innerHTML = `
+      <h3>Add Todo:</h3>
+
+      <div>
+        <input type="text" />
+        <button>Add</button>
+      </div>
+    `
+
+    super.render()
+  }
+}
+
+/* register our custom element into the DOM */
+customElements.define('todo-updater', TodoUpdater)
 ```
 
-\* Ideally you would inject the initial value of the store via observed
-attributes or other methods, just wanted to give a simple example here 😉.
+**Using the Components**
 
-**Use the Components**
-
-Finally, simply mount the components in the `<body>`, click the `Update Todos`
-button and see the reactivity happening 🎆!
+Finally, simply mount the components in the `<body>`, give your todo a name,
+click the `Add` button and see the magic happening 🎆!
 
 ```html
-<!-- ...code from previous examples -->
-
 <body>
   <todo-list></todo-list>
   <todo-updater></todo-updater>

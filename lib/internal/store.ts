@@ -120,13 +120,7 @@ export function defineStore<State extends Indexable<State>>({
     listener(store)
 
     listeners.add(listener)
-    return () => {
-      listeners.delete(listener)
-
-      if (storage && listeners.size === 0) {
-        storage.delete(name)
-      }
-    }
+    return () => listeners.delete(listener)
   }
 
   /**
