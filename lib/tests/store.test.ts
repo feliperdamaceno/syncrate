@@ -9,7 +9,12 @@ describe('defineStore()', () => {
   })
 
   it('should get existing state', () => {
-    const store = defineStore('test', { name: 'john' })
+    const store = defineStore({
+      name: 'test',
+      state: {
+        name: 'john'
+      }
+    })
 
     const want = 'john'
     let got: string | undefined
@@ -19,7 +24,12 @@ describe('defineStore()', () => {
   })
 
   it('should throw error when trying to modify immutable state from get()', () => {
-    const store = defineStore('test', { name: 'john' })
+    const store = defineStore({
+      name: 'test',
+      state: {
+        name: 'john'
+      }
+    })
 
     expect(() => {
       store.get((state) => {
@@ -30,7 +40,13 @@ describe('defineStore()', () => {
   })
 
   it('should set new state', () => {
-    const store = defineStore('test', { name: 'john' })
+    const store = defineStore({
+      name: 'test',
+      state: {
+        name: 'john'
+      }
+    })
+
     store.set(() => ({ name: 'doe' }))
 
     const want = 'doe'
@@ -41,9 +57,12 @@ describe('defineStore()', () => {
   })
 
   it('should retain unchanged state', () => {
-    const store = defineStore('test', {
-      unchanged: 'value',
-      name: 'john'
+    const store = defineStore({
+      name: 'test',
+      state: {
+        unchanged: 'value',
+        name: 'john'
+      }
     })
 
     const want = 'value'
@@ -59,8 +78,11 @@ describe('defineStore()', () => {
   })
 
   it('should not set keys that are not in the original state', () => {
-    const store = defineStore('test', {
-      name: 'john'
+    const store = defineStore({
+      name: 'test',
+      state: {
+        name: 'john'
+      }
     })
 
     // @ts-expect-error: test only
@@ -79,7 +101,12 @@ describe('defineStore()', () => {
   })
 
   it('should allow unsubscribe to store changes', () => {
-    const store = defineStore('test', { name: 'john' })
+    const store = defineStore({
+      name: 'test',
+      state: {
+        name: 'john'
+      }
+    })
 
     const want = 'john'
     let got: string | undefined
@@ -95,7 +122,12 @@ describe('defineStore()', () => {
   })
 
   it('should emit custom event when state changes', () => {
-    const store = defineStore('test', { name: 'john' })
+    const store = defineStore({
+      name: 'test',
+      state: {
+        name: 'john'
+      }
+    })
 
     const handler = vi.fn()
     document.addEventListener('syncrate:test', handler)
@@ -105,7 +137,12 @@ describe('defineStore()', () => {
   })
 
   it('should send changed state in emitted custom event detail', () => {
-    const store = defineStore('test', { name: 'john' })
+    const store = defineStore({
+      name: 'test',
+      state: {
+        name: 'john'
+      }
+    })
 
     const want = 'doe'
     let got: string | undefined
@@ -129,11 +166,17 @@ describe('defineStore()', () => {
       window.sessionStorage.setItem(key, parsed)
     }).not.toThrowError()
 
-    const store = defineStore(
-      key,
-      { name: 'john' },
-      { storage: { persist: true } }
-    )
+    const store = defineStore({
+      name: key,
+      state: {
+        name: 'john'
+      },
+      options: {
+        storage: {
+          persist: true
+        }
+      }
+    })
 
     let got: string | undefined = undefined
 
@@ -144,12 +187,19 @@ describe('defineStore()', () => {
 
   it('should persist data to "session" storage when flags are enabled', () => {
     type TestData = { name: string }
+
     const key = 'test'
-    const store = defineStore(
-      key,
-      { name: 'john' },
-      { storage: { persist: true } }
-    )
+    const store = defineStore({
+      name: key,
+      state: {
+        name: 'john'
+      },
+      options: {
+        storage: {
+          persist: true
+        }
+      }
+    })
 
     let want: TestData | undefined = undefined
     let got: string | undefined = undefined
@@ -169,11 +219,18 @@ describe('defineStore()', () => {
     type TestData = { name: string }
 
     const key = 'test'
-    const store = defineStore(
-      key,
-      { name: 'john' },
-      { storage: { persist: true, type: 'local' } }
-    )
+    const store = defineStore({
+      name: key,
+      state: {
+        name: 'john'
+      },
+      options: {
+        storage: {
+          persist: true,
+          type: 'local'
+        }
+      }
+    })
 
     let want: TestData | undefined = undefined
     let got: string | undefined = undefined

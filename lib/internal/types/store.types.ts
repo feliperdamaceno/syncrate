@@ -17,3 +17,9 @@ export type Store<State> = {
   get: (reader: Reader<DeepReadonly<State>>) => Unsubscriber
   set: (writer: Writer<DeepPartial<State>>) => void
 }
+
+export interface StoreDefinition<State> {
+  name: string
+  state: State
+  options?: StoreOptions
+}

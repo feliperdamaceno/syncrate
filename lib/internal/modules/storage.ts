@@ -1,9 +1,9 @@
 import type { StorageType } from '@/internal/types/storage.types'
 
 /**
- * @description A module that handles CRUD operations on either window.sessionStorage or window.localStorage.
+ * @description A module that handles CRUD operations on either `sessionStorage` or `localStorage`.
  *
- * @param {StorageType} type [type = "session"] - describe the type of storage to be used, it can be either "session" or "local".
+ * @param {StorageType} type [type = "session"] - describe the type of storage to be used, it can be either `session` or `local`.
  *
  */
 export class StorageModule {
@@ -26,18 +26,20 @@ export class StorageModule {
   }
 
   /**
-   * @description Check whether a key is available in the storage.
-   * @param {string} key - The storage key.
-   * @returns {boolean} true if exist, false if not.
+   * @description Check whether a `key` is available in the storage.
+   *
+   * @param {string} key - storage `key`.
+   * @returns {boolean} `true` if exist, `false` if not.
    */
   has(key: string): boolean {
     return this.#storage.getItem(key) !== null
   }
 
   /**
-   * @description Get a value from storage with the given key.
-   * @param {string} key - The storage key.
-   * @returns {T} storage value.
+   * @description Get a `value` from storage with the given `key`.
+   *
+   * @param {string} key - storage `key`.
+   * @returns {T} an array with `value` and possible `error`.
    */
   read<T>(key: string): [T, null] | [null, Error] {
     try {
@@ -58,9 +60,10 @@ export class StorageModule {
   }
 
   /**
-   * @description Set a value from storage with the given key.
-   * @param {string} key - The storage key.
-   * @returns {boolean} true if written, false if not.
+   * @description Set a `value` from storage with the given `key`.
+   *
+   * @param {string} key - storage `key`.
+   * @returns {boolean} `true` if written, `false` if not.
    */
   write<T>(key: string, value: T): boolean {
     try {
@@ -78,9 +81,10 @@ export class StorageModule {
   }
 
   /**
-   * @description Delete a value from storage with the given key.
-   * @param {string} key - The storage key.
-   * @returns {boolean} true if deleted, false if not.
+   * @description Delete a `value` from storage with the given `key`.
+   *
+   * @param {string} key - storage `key`.
+   * @returns {boolean} `true` if deleted, `false` if not.
    */
   delete(key: string): boolean {
     this.#storage.removeItem(key)

@@ -8,7 +8,9 @@ import type {
   Listener,
   Reader,
   Store,
+  StoreDefinition,
   StoreOptions,
+  Unsubscriber,
   Writer
 } from '@/internal/types/store.types'
 
@@ -27,11 +29,17 @@ const defaultStoreOptions: StoreOptions = {
   }
 }
 
-export function defineStore<State extends Indexable<State>>(
-  name: string,
-  state: State,
-  options: StoreOptions = defaultStoreOptions
-): Store<State> {
+/**
+ * @description Creates a reactive store with methods to retrieve and update `state`.
+ *
+ * @param {Object} definition - properties used to define the store.
+ * @returns {Store<T>} store `proxy` object with `get` and a `set` methods.
+ */
+export function defineStore<State extends Indexable<State>>({
+  name,
+  state,
+  options = defaultStoreOptions
+}: StoreDefinition<State>): Store<State> {
   const listeners = new Set<Listener<State>>()
   let storage: StorageModule | null = null
 
@@ -39,6 +47,9 @@ export function defineStore<State extends Indexable<State>>(
     storage = new StorageModule(options.storage.type)
   }
 
+  /**
+   * Helper to create a reactive `proxy` object.
+   */
   function createProxy<T extends Indexable<T>>(value: T): T {
     return new Proxy(value, {
       get: (target, property, receiver) => {
@@ -68,6 +79,9 @@ export function defineStore<State extends Indexable<State>>(
     })
   }
 
+  /**
+   * Helper to handle whether the `state` will be persistent withing `sessionStorage` or `localStorage`.
+   */
   function handlePersistency(): State {
     if (storage && storage.has(name)) {
       const [cache, error] = storage.read<State>(name)
@@ -86,43 +100,57 @@ export function defineStore<State extends Indexable<State>>(
     return proxy
   }
 
+  /**
+   * The store `state` proxy object.
+   */
   const store = handlePersistency()
 
-  return {
-    get: (reader: Reader<DeepReadonly<State>>) => {
-      const listener: Listener<State> = (state) => {
-        const snapshot = deepFreeze(deepClone(state))
-        reader(snapshot)
-      }
+  /**
+   * @description Method used to access the store `state`. It accepts a reader `callback` which contains the `state` as first param. The `reader` is also subscribed into an internal listener mapping, which will notify all `readers` whenever the store changes.
+   *
+   * @param {Function} reader - `callback` function that receive the `state` as first param.
+   * @returns {Function} `callback` used to unsubscribe the `reader`.
+   */
+  const get = (reader: Reader<DeepReadonly<State>>): Unsubscriber => {
+    const listener: Listener<State> = (state) => {
+      const snapshot = deepFreeze(deepClone(state))
+      reader(snapshot)
+    }
 
-      listener(store)
+    listener(store)
 
-      listeners.add(listener)
-      return () => {
-        listeners.delete(listener)
+    listeners.add(listener)
+    return () => {
+      listeners.delete(listener)
 
-        if (storage && listeners.size === 0) {
-          storage.delete(name)
-        }
-      }
-    },
-
-    set: (writer: Writer<DeepPartial<State>>) => {
-      const snapshot = deepClone(store)
-      const updates = Object.entries(writer(snapshot)) as Entries<State>
-
-      updates.forEach(([key, value]) => {
-        if (Object.hasOwn(store, key)) {
-          return (store[key] = value)
-        }
-
-        const error = `key "${String(key)}" does not exist on store "${name}"`
-        console.error(error)
-      })
-
-      if (storage) {
-        storage.write(name, deepClone(store))
+      if (storage && listeners.size === 0) {
+        storage.delete(name)
       }
     }
   }
+
+  /**
+   * @description Method used to update the store `state`. It accepts a writer `callback` which contains the `state` as first param. Calling the `set` method will trigger a notification to all `readers`.
+   *
+   * @param {Function} writer - `callback` function that receive the `state` as first param.
+   */
+  const set = (writer: Writer<DeepPartial<State>>): void => {
+    const snapshot = deepClone(store)
+    const updates = Object.entries(writer(snapshot)) as Entries<State>
+
+    updates.forEach(([key, value]) => {
+      if (Object.hasOwn(store, key)) {
+        return (store[key] = value)
+      }
+
+      const error = `key "${String(key)}" does not exist on store "${name}"`
+      console.error(error)
+    })
+
+    if (storage) {
+      storage.write(name, deepClone(store))
+    }
+  }
+
+  return { get, set }
 }
